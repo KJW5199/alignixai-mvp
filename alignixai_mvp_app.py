@@ -13,15 +13,18 @@ APPROVED_SUMMARIES_FILE = "approved_summaries.json"
 AUDIT_LOG_FILE = "audit_log.json"
 EMPLOYEE_DATA_FILE = "mock_employees.json"
 
+
 def load_json(filepath, default):
     if os.path.exists(filepath):
         with open(filepath, "r") as f:
             return json.load(f)
     return default
 
+
 def save_json(filepath, data):
     with open(filepath, "w") as f:
         json.dump(data, f, default=str)
+
 
 def load_employees():
     data = load_json(EMPLOYEE_DATA_FILE, None)
@@ -33,6 +36,7 @@ def load_employees():
             {"Employee ID": "EMP002", "Name": "James Ormond", "Role": "KYC QC Analyst", "Training": []},
             {"Employee ID": "EMP003", "Name": "Priya Malhotra", "Role": "KYC Analyst", "Training": []},
         ])
+
 
 def save_employees(df):
     save_json(EMPLOYEE_DATA_FILE, df.to_dict(orient="records"))
@@ -59,9 +63,11 @@ def show_dashboard():
             approved_summaries.clear()
             if os.path.exists(APPROVED_SUMMARIES_FILE):
                 os.remove(APPROVED_SUMMARIES_FILE)
+
             audit_log.clear()
             if os.path.exists(AUDIT_LOG_FILE):
                 os.remove(AUDIT_LOG_FILE)
+
             for idx in mock_employees.index:
                 mock_employees.at[idx, 'Training'] = []
             save_employees(mock_employees)
@@ -77,6 +83,13 @@ def show_dashboard():
         filtered = mock_policies if filter_status == "All" else mock_policies[mock_policies['Status'] == filter_status]
         st.dataframe(filtered)
 
+
+    st.markdown(
+        "<div style='text-align: center; font-size: 12px; color: grey; margin-top: 40px;'>"
+        "🔒 Confidential Prototype – Do not use with real client data"
+        "</div>",
+        unsafe_allow_html=True
+    )
 def add_policy_from_file(uploaded_file):
     uploaded_title = uploaded_file.name.split('.')[0]
     if uploaded_title not in mock_policies['Title'].values:
@@ -94,8 +107,7 @@ def show_policy_review():
     st.subheader("📥 Upload & Review Policy Document")
 
     st.markdown("**⚠️ Test Use Only:** Please do not upload real client or employee data. Use anonymized or sample policies only.")
-
-    uploaded_file = st.file_uploader("Upload policy file (PDF or TXT)", type=["txt", "pdf"])
+uploaded_file = st.file_uploader("Upload policy file (PDF or TXT)", type=["txt", "pdf"])
     if uploaded_file:
         add_policy_from_file(uploaded_file)
         file_name = uploaded_file.name.split('.')[0]
@@ -103,17 +115,16 @@ def show_policy_review():
         file_content = ""
         if uploaded_file.name.endswith(".pdf"):
             temp_path = "temp_uploaded.pdf"
-            with open(temp_path, "wb") as f:
+        with open(temp_path, "wb") as f:
                 f.write(uploaded_file.getbuffer())
             with fitz.open("temp_uploaded.pdf") as doc:
                 for page in doc:
-                    file_content += page.get_text()
+                file_content += page.get_text()
         else:
             file_content = uploaded_file.read().decode("utf-8", errors="ignore")
-
         st.text_area("📄 File Content Preview:", file_content[:1000], height=200)
-        if os.path.exists("temp_uploaded.pdf"):
-            os.remove("temp_uploaded.pdf")
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
         st.success("File received. You can now generate a training summary manually.")
 
     pending_titles = mock_policies[mock_policies['Status'] == 'Pending Review']['Title'].tolist()
@@ -135,6 +146,7 @@ def show_policy_review():
             save_json(APPROVED_SUMMARIES_FILE, approved_summaries)
             save_json(AUDIT_LOG_FILE, audit_log)
             st.success("Approved and added as training module!")
+
 
 def show_training_tab():
     st.subheader("🎓 Training Assignment & Progress")
@@ -179,6 +191,7 @@ def show_training_tab():
             csv = df.to_csv(index=False).encode('utf-8')
             st.download_button("📥 Download CSV Report", data=csv, file_name="training_report.csv", mime='text/csv')
 
+
 def show_user_login():
     st.subheader("👤 Employee Training Portal")
     user = st.selectbox("Log in as employee:", mock_employees['Name'])
@@ -205,6 +218,7 @@ def show_user_login():
     else:
         st.warning("No training assigned.")
 
+
 def show_audit_log():
     st.subheader("📜 Full Audit Trail")
     if not audit_log:
@@ -215,6 +229,12 @@ def show_audit_log():
 
 # ---------- NAV ----------
 tabs = st.sidebar.radio("🔎 Navigate:", ["Dashboard", "Policy Review", "Training", "User Portal", "Audit Log"])
+st.sidebar.markdown("### 🔒 Disclaimer")
+st.sidebar.info(
+    "This prototype is for demonstration and testing purposes only. "
+    "It is not intended for use with actual client or employee data. "
+    "All functionality and concepts are confidential and the property of AlignixAI."
+)
 
 if tabs == "Dashboard":
     show_dashboard()
@@ -226,3 +246,9 @@ elif tabs == "User Portal":
     show_user_login()
 elif tabs == "Audit Log":
     show_audit_log()
+    st.markdown(
+        "<div style='text-align: center; font-size: 12px; color: grey; margin-top: 40px;'>"
+        "🔒 Confidential Prototype – Do not use with real client data"
+        "</div>",
+        unsafe_allow_html=True
+    )
